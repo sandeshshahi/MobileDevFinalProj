@@ -1,0 +1,20 @@
+[
+  {
+    "name": "Maha Shivaratri",
+    "bsDate": "2081-11-20",
+    "adDate": "2025-02-28",
+    "description": "A major festival in Hinduism, this festival is a solemn and marks a remembrance of 'overcoming darkness and ignorance' in life and the world."
+  },
+  {
+    "name": "Holi",
+    "bsDate": "2081-12-01",
+    "adDate": "2025-03-14",
+    "description": "A popular ancient Hindu festival, also known as the 'Festival of Love', the 'Festival of Colours' and the 'Festival of Spring'."
+  },
+  {
+    "name": "Ram Navami",
+    "bsDate": "2081-12-25",
+    "adDate": "2025-04-07",
+    "description": "A Hindu festival that celebrates the birthday of Rama, the seventh avatar of the deity Vishnu."
+  }
+]
