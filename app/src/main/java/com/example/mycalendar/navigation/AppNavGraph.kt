@@ -22,6 +22,7 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.mycalendar.presentation.ui.CalendarScreen
+import com.example.mycalendar.presentation.ui.FestivalDetailScreen
 import kotlin.text.clear
 
 @Composable
@@ -73,9 +74,17 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                 entry <Calendar> {
                     //content of home goes here // HomeScreen()
                     CalendarScreen(
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(innerPadding),
+                        onOpenFestival = { name, bsMonth, bsDate, enDate ->
+                            backStack.add(FestivalDetail(name, bsMonth, bsDate, enDate))
+                        }
                     )
-
+                }
+                entry<FestivalDetail> { key ->
+                    FestivalDetailScreen(
+                        args = key,
+                        onBack = { backStack.removeLastOrNull() }
+                    )
                 }
             },
 

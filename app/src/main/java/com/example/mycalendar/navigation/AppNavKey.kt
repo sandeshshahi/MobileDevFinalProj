@@ -10,7 +10,12 @@ interface AppNavKey: NavKey
 object Calendar: AppNavKey
 
 @Serializable
-data class FestivalDetail(val festivalName: String): AppNavKey
+data class FestivalDetail(
+    val festivalName: String,
+    val bsMonth: String,
+    val bsDate: String,
+    val enDate: String = ""
+): AppNavKey
 
 @Serializable
 object Info: AppNavKey

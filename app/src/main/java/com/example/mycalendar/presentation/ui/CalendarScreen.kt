@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 fun CalendarScreen(
     viewModel: CalendarViewModel = viewModel() ,
     modifier: Modifier = Modifier,
+    onOpenFestival: (festivalName: String, bsMonth: String, bsDate: String, enDate: String) -> Unit = { _, _, _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
@@ -73,11 +74,7 @@ fun CalendarScreen(
     // Reset selection to today (or first day) on month change
     LaunchedEffect(uiState.days) {
         val todayIdxInCurrent = currentMonthDays.indexOfFirst { it.isToday }
-        selectedBottomIndex = when {
-            todayIdxInCurrent >= 0 -> todayIdxInCurrent
-            currentMonthDays.isNotEmpty() -> 0
-            else -> 0
-        }
+        selectedBottomIndex = if (todayIdxInCurrent >= 0) todayIdxInCurrent else 0
     }
 
     Scaffold(
@@ -85,7 +82,9 @@ fun CalendarScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .padding(top = 16.dp),
+
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -164,10 +163,12 @@ fun CalendarScreen(
                                 .fillMaxWidth()
                                 .clickable {
                                     selectedBottomIndex = idx
-                                    val gridIndex = currentMonthIndices.getOrNull(idx)
-                                    if (gridIndex != null) {
-                                        // No grid scroll here, but selection is reflected
-                                        scope.launch { bottomListState.animateScrollToItem(idx) }
+                                    scope.launch { bottomListState.animateScrollToItem(idx) }
+                                    val fest = day.festivalName?.trim().orEmpty()
+                                    if (fest.isNotEmpty() && fest != "No events") {
+                                        val bsMonth = bsMonthOnly(uiState.bsMonthName)
+                                        val enPart = enMonthDay(day)
+                                        onOpenFestival(fest, bsMonth, day.bsDate, enPart)
                                     }
                                 }
                                 .padding(horizontal = 16.dp, vertical = 10.dp)
@@ -196,7 +197,7 @@ fun CalendarScreen(
 
 @Composable
 private fun WeekdayHeaderRow() {
-    val weekdays = listOf("Sun", "Mon", "Tues", "Wed", "Thurs", "Fri", "Sat")
+    val weekdays = listOf("Sun", "Mon", "Tue", "Wed", "Thur", "Fri", "Sat")
     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)) {
         weekdays.forEachIndexed { index, label ->
             val color = if (index == 0) Color.Red else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f)
@@ -294,4 +295,15 @@ private fun formatBottomLine(day: CalendarDay, bsMonthName: String): String {
     val enPart = if (enMonth.isNotBlank() && enDay.isNotBlank()) " ($enMonth $enDay)" else ""
     val fest = day.festivalName?.takeIf { it.isNotBlank() } ?: "No events"
     return "$bsMonthOnly ${day.bsDate}$enPart: $fest"
+}
+
+private fun bsMonthOnly(bsMonthName: String): String =
+    bsMonthName.replace(Regex("[0-9०-९]+"), "").trim().replace(Regex("\\s+"), " ")
+
+private fun enMonthDay(day: CalendarDay): String {
+    val parts = day.adDate.split("/")
+    val enDay = parts.getOrNull(0).orEmpty()
+    val enMonthNum = parts.getOrNull(1)?.toIntOrNull()
+    val enMonth = enMonthNum?.let { monthNumToShort(it) }.orEmpty()
+    return if (enMonth.isNotBlank() && enDay.isNotBlank()) "$enMonth $enDay" else ""
 }
