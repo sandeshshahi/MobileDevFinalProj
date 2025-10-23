@@ -3,6 +3,7 @@ package com.example.mycalendar.presentation.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,11 +26,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -38,29 +42,43 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.mycalendar.data.local.PreferencesDataSource
 import com.example.mycalendar.presentation.uistate.CalendarDay
 import com.example.mycalendar.presentation.viewmodel.CalendarViewModel
+import com.example.mycalendar.presentation.viewmodel.NotesViewModel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 @Composable
 fun CalendarScreen(
     viewModel: CalendarViewModel = viewModel() ,
     modifier: Modifier = Modifier,
-    onOpenFestival: (festivalName: String, bsMonth: String, bsDate: String, enDate: String) -> Unit = { _, _, _, _ -> }
+    onOpenFestival: (festivalName: String, bsMonth: String, bsDate: String, enDate: String) -> Unit = { _, _, _, _ -> },
+    onRequireLogin: () -> Unit = { }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
+
+    val context = LocalContext.current
+    val prefs = PreferencesDataSource(context)
+
+    // collect stored user credentials and expose currentUsername
+    val userCredentials by prefs.getUserCredentials().collectAsState(initial = null)
+    val currentUsername = userCredentials?.username.orEmpty()
+
 
     // Bottom list state and selection
     val bottomListState: LazyListState = rememberLazyListState()
@@ -76,6 +94,49 @@ fun CalendarScreen(
         val todayIdxInCurrent = currentMonthDays.indexOfFirst { it.isToday }
         selectedBottomIndex = if (todayIdxInCurrent >= 0) todayIdxInCurrent else 0
     }
+
+    var showAddDialog by remember { mutableStateOf(false) }
+    var dialogDay by remember { mutableStateOf<CalendarDay?>(null) }
+
+    if (showAddDialog && dialogDay != null) {
+        val day = dialogDay!!
+        var noteText by remember { mutableStateOf("") }
+        val notesVm: NotesViewModel = viewModel(factory = androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory(context.applicationContext as android.app.Application))
+        val coroutine = rememberCoroutineScope()
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false; dialogDay = null },
+            title = { Text("Add note / reminder") },
+            text = {
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    label = { Text("Note") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(onClick = {
+                    coroutine.launch {
+                        if (currentUsername.isNotBlank() && noteText.isNotBlank()) {
+                            notesVm.addNoteForUser(
+                                username = currentUsername,
+                                bsMonth = uiState.bsMonthName,
+                                bsDate = day.bsDate,
+                                enDate = day.adDate,
+                                text = noteText
+                            )
+                        }
+                        showAddDialog = false
+                        dialogDay = null
+                    }
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                Button(onClick = { showAddDialog = false; dialogDay = null }) { Text("Cancel") }
+            }
+        )
+    }
+
 
     Scaffold(
         topBar = {
@@ -130,16 +191,30 @@ fun CalendarScreen(
                         item(span = { GridItemSpan(7) }) { WeekdayHeaderRow() }
                         itemsIndexed(uiState.days) { index, day ->
                             val isSelected = index == selectedGridIndex
-                            DayCell(day = day, selected = isSelected) {
-                                if (!day.isCurrentMonth) return@DayCell
-                                val bottomIndex = currentMonthIndices.indexOf(index)
-                                if (bottomIndex >= 0) {
-                                    selectedBottomIndex = bottomIndex
-                                    scope.launch {
-                                        bottomListState.animateScrollToItem(bottomIndex)
+                            DayCell(
+                                day = day,
+                                selected = isSelected,
+                                onClick = {
+                                    if (day.isCurrentMonth) {
+                                        val bottomIndex = currentMonthIndices.indexOf(index)
+                                        if (bottomIndex >= 0) {
+                                            selectedBottomIndex = bottomIndex
+                                            scope.launch {
+                                                bottomListState.animateScrollToItem(bottomIndex)
+                                            }
+                                        }
+                                    }
+                                },
+                                onLongPress = {
+                                    if (!day.isCurrentMonth) return@DayCell
+                                    if (currentUsername.isBlank()) {
+                                        onRequireLogin()
+                                    } else {
+                                        dialogDay = day
+                                        showAddDialog = true
                                     }
                                 }
-                            }
+                            )
                         }
                     }
                 }
@@ -214,7 +289,7 @@ private fun WeekdayHeaderRow() {
 }
 
 @Composable
-fun DayCell(day: CalendarDay, selected: Boolean, onClick: () -> Unit) {
+fun DayCell(day: CalendarDay, selected: Boolean, onClick: () -> Unit, onLongPress: () -> Unit = {}) {
     var backgroundColor = MaterialTheme.colorScheme.surface
     var contentColor = MaterialTheme.colorScheme.onSurface
     var borderColor = Color.LightGray.copy(alpha = 0.5f)
@@ -241,7 +316,11 @@ fun DayCell(day: CalendarDay, selected: Boolean, onClick: () -> Unit) {
     Surface(
         modifier = Modifier
             .aspectRatio(0.8f)
-            .clickable(enabled = day.isCurrentMonth) { onClick() },
+            .combinedClickable(
+                enabled = day.isCurrentMonth,
+                onClick = onClick ,
+                onLongClick =  onLongPress
+        ),
 //        shape = RoundedCornerShape(1.dp),
         color = backgroundColor,
         contentColor = contentColor,

@@ -19,3 +19,9 @@ data class FestivalDetail(
 
 @Serializable
 object Info: AppNavKey
+
+@Serializable
+object Login: AppNavKey
+
+@Serializable
+object Register: AppNavKey

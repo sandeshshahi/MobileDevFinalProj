@@ -23,6 +23,9 @@ import androidx.navigation3.runtime.rememberSavedStateNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.example.mycalendar.presentation.ui.CalendarScreen
 import com.example.mycalendar.presentation.ui.FestivalDetailScreen
+import com.example.mycalendar.presentation.ui.InfoScreen
+import com.example.mycalendar.presentation.ui.LoginScreen
+import com.example.mycalendar.presentation.ui.RegisterScreen
 import kotlin.text.clear
 
 @Composable
@@ -56,39 +59,82 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
                     },
                     label = { Text(text = "Info") },
                     icon = {
-                            Icon(Icons.Default.AccountCircle, contentDescription = "Info")
+                        Icon(Icons.Default.AccountCircle, contentDescription = "Info")
                     },
                 )
             }
         }
     ) { innerPadding ->
         //setup navigation display
-        NavDisplay(
-            backStack = backStack,
-            onBack = {backStack.removeLastOrNull()},
-            entryDecorators = listOf(
-                rememberSavedStateNavEntryDecorator(),
-                rememberViewModelStoreNavEntryDecorator()
-            ),
-            entryProvider = entryProvider {
-                entry <Calendar> {
-                    //content of home goes here // HomeScreen()
-                    CalendarScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        onOpenFestival = { name, bsMonth, bsDate, enDate ->
-                            backStack.add(FestivalDetail(name, bsMonth, bsDate, enDate))
-                        }
-                    )
-                }
-                entry<FestivalDetail> { key ->
-                    FestivalDetailScreen(
-                        args = key,
-                        onBack = { backStack.removeLastOrNull() }
-                    )
-                }
-            },
+//        NavDisplay(
+//            backStack = backStack,
+//            onBack = {backStack.removeLastOrNull()},
+//            entryDecorators = listOf(
+//                rememberSavedStateNavEntryDecorator(),
+//                rememberViewModelStoreNavEntryDecorator()
+//            ),
+//            entryProvider = entryProvider {
+//                entry <Calendar> {
+//                    //content of home goes here // HomeScreen()
+//                    CalendarScreen(
+//                        modifier = Modifier.padding(innerPadding),
+//                        onOpenFestival = { name, bsMonth, bsDate, enDate ->
+//                            backStack.add(FestivalDetail(name, bsMonth, bsDate, enDate))
+//                        }
+//                    )
+//                }
+//                entry<FestivalDetail> { key ->
+//                    FestivalDetailScreen(
+//                        args = key,
+//                        onBack = { backStack.removeLastOrNull() }
+//                    )
+//                }
+//                entry<Info> {
+//                    InfoScreen()
+//                }
+//            },
+//        )
 
-        )
+        when (val screen = backStack.lastOrNull() ?: Calendar) {
+            is Calendar -> CalendarScreen(
+                modifier = modifier.then(androidx.compose.ui.Modifier),
+                onOpenFestival = { name, bsMonth, bsDate, enDate ->
+                    backStack.add(FestivalDetail(name, bsMonth, bsDate, enDate))
+                },
+                onRequireLogin = { backStack.add(Login) }
+            )
+
+            is Info -> InfoScreen(
+                onNavigateToLogin = { backStack.add(Login) },
+                onNavigateToRegister = { backStack.add(Register) },
+                modifier = modifier.padding(innerPadding)
+            )
+
+            is Login -> LoginScreen(
+                onBack = { if (backStack.isNotEmpty()) backStack.removeLast() },
+                onLoginSuccess = {
+                    // Go to Info (and optionally remove Login from stack)
+                    if (backStack.lastOrNull() == Login) backStack.removeLast()
+                    backStack.add(Info)
+                },
+                modifier = modifier.padding(innerPadding)
+            )
+
+            is Register -> RegisterScreen(
+                onBack = { if (backStack.isNotEmpty()) backStack.removeLast() },
+                onRegistered = {
+                    if (backStack.lastOrNull() == Register) backStack.removeLast()
+                    backStack.add(Info)
+                },
+                modifier = modifier.padding(innerPadding)
+            )
+
+            is FestivalDetail -> FestivalDetailScreen(
+                args = screen,
+                onBack = { if (backStack.isNotEmpty()) backStack.removeLast() }
+            )
+        }
+
     }
 
 

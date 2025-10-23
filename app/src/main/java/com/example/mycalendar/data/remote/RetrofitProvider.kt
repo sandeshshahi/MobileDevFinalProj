@@ -8,7 +8,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 object RetrofitProvider {
-    // Use 10.0.2.2 to access host `localhost` from Android emulator
     private const val BASE_URL = "http://10.0.2.2:3000/"
 
     fun create(): NepaliCalendarApiService {
