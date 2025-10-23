@@ -7,14 +7,20 @@ import com.example.mycalendar.core.database.NotesDatabase
 import com.example.mycalendar.core.database.entity.Note
 import com.example.mycalendar.data.local.PreferencesDataSource
 import com.example.mycalendar.data.repository.NotesRepositoryImpl
+import com.example.mycalendar.domain.repository.NotesRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class NotesViewModel(application: Application) : AndroidViewModel(application) {
-    private val prefs = PreferencesDataSource(application)
-    private val repo = NotesRepositoryImpl(NotesDatabase.getDatabase(application).noteDao())
+class NotesViewModel(
+    application: Application,
+    private val repo: NotesRepository = NotesRepositoryImpl(NotesDatabase.getDatabase(application).noteDao()),
+    private val prefs: PreferencesDataSource = PreferencesDataSource(application)
+) : AndroidViewModel(application) {
+
+//    private val prefs = PreferencesDataSource(application)
+//    private val repo = NotesRepositoryImpl(NotesDatabase.getDatabase(application).noteDao())
 
     // exposes notes for currently logged in user
     val userNotes = prefs.getUserCredentials()

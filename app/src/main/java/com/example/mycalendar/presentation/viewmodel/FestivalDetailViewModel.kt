@@ -5,10 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.mycalendar.core.ai.GenerativeModelService
+import com.example.mycalendar.core.dispatcher.AppDispatchers
+import com.example.mycalendar.core.dispatcher.DefaultAppDispatchers
 import com.example.mycalendar.data.repository.FestivalRepositoryImpl
 import com.example.mycalendar.domain.repository.FestivalRepository
 import com.example.mycalendar.presentation.uistate.FestivalDetailUiState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,7 +23,8 @@ class FestivalDetailViewModel(
     private val bsMonth: String,
     private val bsDate: String,
     private val enDate: String,
-    private val festivalRepository: FestivalRepository
+    private val festivalRepository: FestivalRepository,
+    private val dispatchers: AppDispatchers = DefaultAppDispatchers
 ) : ViewModel() {
 
     private val parsedFestivals: Pair<String, String> = festivalName.split("\n", limit = 2).let { parts ->
@@ -73,17 +75,15 @@ class FestivalDetailViewModel(
     private fun load() = viewModelScope.launch {
         _uiState.update { it.copy(isLoading = true, error = null) }
 
-        // 1) Translate for image prompt (via same text model)
         val englishImageName: String
         val translationError: Throwable?
-        withContext(Dispatchers.IO) {
+        withContext(dispatchers.io) {
             val prompt = "Translate the following Nepali festival name to English: \"$aiPromptName\". Provide only the translated English name and nothing else."
             val result = festivalRepository.generateText(prompt)
             translationError = result.exceptionOrNull()
             englishImageName = result.getOrNull()?.trim().orEmpty().ifBlank { "a Nepali cultural celebration" }
         }
 
-        // 2) Build prompts
         val textPrompt = buildTextPrompt()
         val imagePrompt = buildImagePrompt(englishImageName)
 
@@ -92,23 +92,15 @@ class FestivalDetailViewModel(
         Log.d("FestivalVM", "textPrompt -> $textPrompt")
         Log.d("FestivalVM", "imagePrompt -> $imagePrompt")
 
-        // 3) Run in parallel
-//        val descDeferred = async(Dispatchers.IO) { festivalRepository.generateText(textPrompt) }
-//        val imgDeferred = async(Dispatchers.IO) { festivalRepository.generateImage(imagePrompt) }
-
-        // Run AI calls in parallel; do not cancel both if one fails.
         val textResult = supervisorScope {
-            async(Dispatchers.IO) { festivalRepository.generateText(textPrompt) }.await()
+            async(dispatchers.io) { festivalRepository.generateText(textPrompt) }.await()
         }
         val imgResult = supervisorScope {
-            async(Dispatchers.IO) { festivalRepository.generateImage(imagePrompt) }.await()
+            async(dispatchers.io) { festivalRepository.generateImage(imagePrompt) }.await()
         }
 
-//        val textResult = descDeferred.await()
-//        val imgResult = imgDeferred.await()
-
         val description = textResult.getOrElse {
-            withContext(Dispatchers.IO) {
+            withContext(dispatchers.io) {
                 GenerativeModelService.generateFestivalDescription(aiPromptName).ifBlank {
                     if (festivalName.isBlank())
                         "A Nepali cultural festival observed with rituals and community gatherings."
@@ -122,17 +114,9 @@ class FestivalDetailViewModel(
         val textSucceeded = textResult.isSuccess
         val imageSucceeded = imgResult.isSuccess && images.isNotEmpty()
 
-
         val friendlyError = if (!textSucceeded && !imageSucceeded) {
             "Content is temporarily unavailable. Please try again."
         } else null
-
-
-//        val errorMsg = buildList {
-//            translationError?.let { add("Translate: ${it.message ?: it::class.simpleName}") }
-//            textResult.exceptionOrNull()?.let { add("Text: ${it.message ?: it::class.simpleName}") }
-//            imgResult.exceptionOrNull()?.let { add("Image: ${it.message ?: it::class.simpleName}") }
-//        }.takeIf { it.isNotEmpty() }?.joinToString("; ")
 
         _uiState.update {
             it.copy(
@@ -153,9 +137,9 @@ class FestivalDetailViewModel(
         ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                val repo = FestivalRepositoryImpl(
-                    imagenModel = GenerativeModelService.getImageGenModel(),
-                    textModel = GenerativeModelService.getTextGenModel()
+                val repo = com.example.mycalendar.data.repository.FestivalRepositoryImpl(
+                    imagenModel = com.example.mycalendar.core.ai.GenerativeModelService.getImageGenModel(),
+                    textModel = com.example.mycalendar.core.ai.GenerativeModelService.getTextGenModel()
                 )
                 return FestivalDetailViewModel(
                     festivalName = festivalName,

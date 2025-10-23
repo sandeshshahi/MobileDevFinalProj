@@ -2,12 +2,18 @@
 package com.example.mycalendar.presentation.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
@@ -21,6 +27,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -32,7 +39,8 @@ import com.example.mycalendar.presentation.viewmodel.FestivalDetailViewModel
 @Composable
 fun FestivalDetailScreen(
     args: FestivalDetail,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
 
     val vmKey = buildString {
@@ -80,7 +88,7 @@ fun FestivalDetailScreen(
         }
     ) { inner ->
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(inner)
                 .padding(16.dp)
@@ -88,9 +96,8 @@ fun FestivalDetailScreen(
             Text(text = title, style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(12.dp))
 
-            if (ui.isLoading) {
-                CircularProgressIndicator()
-            } else {
+            // Show image only if not loading and available
+            if (!ui.isLoading) {
                 ui.image.firstOrNull()?.let { bmp ->
                     Image(
                         bitmap = bmp.asImageBitmap(),
@@ -102,12 +109,52 @@ fun FestivalDetailScreen(
                     )
                     Spacer(Modifier.height(12.dp))
                 }
-                ui.error?.let {
-                    Text(text = it, color = MaterialTheme.colorScheme.error)
-                    Spacer(Modifier.height(8.dp))
-                }
-                Text(text = ui.description, style = MaterialTheme.typography.bodyLarge)
             }
+
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth()
+            ) {
+                if (ui.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.Center) // Center loader
+                    )
+                } else {
+                    // This Column is for the text content and is scrollable
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize() // Fill the parent Box
+                            .verticalScroll(rememberScrollState()) // Make it scrollable
+                    ) {
+                        ui.error?.let {
+                            Text(text = it, color = MaterialTheme.colorScheme.error)
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        Text(text = ui.description, style = MaterialTheme.typography.bodyLarge)
+
+                    }
+                }
+            }
+//            if (ui.isLoading) {
+//                CircularProgressIndicator()
+//            } else {
+//                ui.image.firstOrNull()?.let { bmp ->
+//                    Image(
+//                        bitmap = bmp.asImageBitmap(),
+//                        contentDescription = "AI generated image for ${ui.festivalName}",
+//                        modifier = Modifier
+//                            .fillMaxWidth()
+//                            .height(220.dp),
+//                        contentScale = ContentScale.Crop
+//                    )
+//                    Spacer(Modifier.height(12.dp))
+//                }
+//                ui.error?.let {
+//                    Text(text = it, color = MaterialTheme.colorScheme.error)
+//                    Spacer(Modifier.height(8.dp))
+//                }
+//                Text(text = ui.description, style = MaterialTheme.typography.bodyLarge)
+//            }
         }
     }
 }

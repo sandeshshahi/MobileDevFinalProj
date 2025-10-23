@@ -97,7 +97,7 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
 
         when (val screen = backStack.lastOrNull() ?: Calendar) {
             is Calendar -> CalendarScreen(
-                modifier = modifier.then(androidx.compose.ui.Modifier),
+                modifier = Modifier.padding(innerPadding),
                 onOpenFestival = { name, bsMonth, bsDate, enDate ->
                     backStack.add(FestivalDetail(name, bsMonth, bsDate, enDate))
                 },
@@ -131,7 +131,8 @@ fun AppNavGraph(modifier: Modifier = Modifier) {
 
             is FestivalDetail -> FestivalDetailScreen(
                 args = screen,
-                onBack = { if (backStack.isNotEmpty()) backStack.removeLast() }
+                onBack = { if (backStack.isNotEmpty()) backStack.removeLast() },
+                modifier = modifier.padding(innerPadding)
             )
         }
 

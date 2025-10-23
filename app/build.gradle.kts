@@ -47,6 +47,19 @@ android {
     buildFeatures {
         compose = true
     }
+
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
+            isIncludeAndroidResources = true
+            all {
+                // Allow running tests when app targetSdk > Robolectric's max
+                it.systemProperty("robolectric.ignoreAppTargetSdk", "true")
+                // Force an SDK Robolectric supports
+                it.systemProperty("robolectric.enabledSdks", "34")
+            }
+        }
+    }
 }
 
 dependencies {
@@ -90,7 +103,7 @@ dependencies {
     // Icons (material icons extended)
     implementation("androidx.compose.material:material-icons-extended")
 
-// kotlin
+    // kotlin
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
 
     //navigation3
@@ -101,6 +114,11 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
     implementation("androidx.compose.material:material-icons-core:1.7.8")
 
+    // Testing
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+    testImplementation("org.robolectric:robolectric:4.13")
+    testImplementation("androidx.test:core-ktx:1.6.1")
+    testImplementation("junit:junit:4.13.2")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

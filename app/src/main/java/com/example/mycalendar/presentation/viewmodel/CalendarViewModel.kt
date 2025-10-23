@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mycalendar.data.remote.Day
 import com.example.mycalendar.data.remote.RetrofitProvider
+import com.example.mycalendar.domain.repository.CalendarRepository
 import com.example.mycalendar.presentation.uistate.CalendarDay
 import com.example.mycalendar.presentation.uistate.CalendarUiState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,12 @@ import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.Month
 
-class CalendarViewModel : ViewModel() {
+class CalendarViewModel(
+    private val repository: CalendarRepository = object : CalendarRepository {
+        override suspend fun syncCalendar() { /* no-op by default */ }
+    },
+    private val skipNetwork: Boolean = false
+) : ViewModel() {
 
     private val api = RetrofitProvider.create()
     private val _uiState = MutableStateFlow(CalendarUiState())
@@ -36,6 +42,15 @@ class CalendarViewModel : ViewModel() {
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
             try {
+                // Allow tests to observe sync calls
+                repository.syncCalendar()
+
+                // short-circuit for unit tests; do not hit network
+                if (skipNetwork) {
+                    _uiState.update { it.copy(isLoading = false, days = emptyList(), bsMonthName = "", adMonthSpan = "") }
+                    return@launch
+                }
+
                 val resp = api.getMonth(year = bsYear, month = bsMonth)
                 if (resp.isSuccessful) {
                     val body = resp.body()

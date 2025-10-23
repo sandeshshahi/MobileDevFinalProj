@@ -139,6 +139,7 @@ fun CalendarScreen(
 
 
     Scaffold(
+        modifier = modifier,
         topBar = {
             Row(
                 modifier = Modifier
