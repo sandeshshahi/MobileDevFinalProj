@@ -18,6 +18,12 @@ class PreferencesDataSource(val context: Context) {
         }
     }
 
+    suspend fun clearUserCredentials() {
+        context.dataStore.edit { preferences: MutablePreferences ->
+            preferences.remove(DataStoreKeys.USER_NAME)
+            preferences.remove(DataStoreKeys.PASSWORD)
+        }
+    }
     fun getUserCredentials(): Flow<UserCredentials?>{
         return context
             .dataStore  //Datastore<Preferences>

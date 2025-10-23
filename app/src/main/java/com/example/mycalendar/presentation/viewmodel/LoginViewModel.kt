@@ -21,24 +21,28 @@ class LoginViewModel(
     private val _loginUiState = MutableStateFlow(LoginUiState())
     val loginUiState: StateFlow<LoginUiState> = _loginUiState.asStateFlow()
 
-    init {
-        viewModelScope.launch {
-            val existing = loginRepository.getUserCredentials().firstOrNull()
-            if (existing?.username == "admin" && existing.password == "admin") {
-                Log.i("LoginViewModel", "Existing already logged in")
-            }
-        }
+    fun resetLoginState() {
+        _loginUiState.value = LoginUiState()
     }
+
+//    init {
+//        viewModelScope.launch {
+//            val existing = loginRepository.getUserCredentials().firstOrNull()
+//            if (existing != null) {
+//                Log.i("LoginViewModel", "Existing already logged in")
+//            }
+//        }
+//    }
 
     fun onUsernameChange(username: String) {
         _loginUiState.update {
-            it.copy(username = username)
+            it.copy(username = username, error = null, loginSuccess = false)
         }
     }
 
     fun onPasswordChange(password: String) {
         _loginUiState.update {
-            it.copy(password = password)
+            it.copy(password = password, error = null, loginSuccess = false)
         }
     }
 
@@ -47,20 +51,34 @@ class LoginViewModel(
             val username = loginUiState.value.username
             val password = loginUiState.value.password
 
-            if (username == "admin" && password == "admin") {
-                //write login credentials to datastore object(auth_preferences)
-                loginRepository.saveUserCredentials(
-                    UserCredentials(
-                        username = username,
-                        password = password
-                    )
-                )
-                // go to home screen
-                Log.i("LoginViewModel", "Login Success")
-            } else {
-                // show error message
-                Log.i("LoginViewModel", "Login Failed")
+            if (username.isBlank() || password.isBlank()) {
+                _loginUiState.update { it.copy(error = "Enter username and password") }
+                return@launch
             }
+
+            val registered = loginRepository.getUserCredentials().firstOrNull()
+
+            when {
+                // No registered user found (fresh or after logout) -> accept and save this as the account
+                registered == null -> {
+                    loginRepository.saveUserCredentials(UserCredentials(username, password))
+                    _loginUiState.update { it.copy(loginSuccess = true, error = null) }
+                }
+                // Match registered user
+                username == registered.username && password == registered.password -> {
+                    _loginUiState.update { it.copy(loginSuccess = true, error = null) }
+                }
+                else -> {
+                    _loginUiState.update { it.copy(error = "Invalid credentials") }
+                }
+            }
+        }
+    }
+    fun logout() {
+        viewModelScope.launch {
+            // Ensure your repository clears saved credentials
+            // e.g., loginRepository.clearUserCredentials()
+            resetLoginState()
         }
     }
 

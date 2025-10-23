@@ -3,7 +3,12 @@ package com.example.mycalendar.presentation.ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -38,6 +43,10 @@ fun LoginScreen(
     }
     val loginUiState by loginViewModel.loginUiState.collectAsStateWithLifecycle()
 
+    LaunchedEffect(Unit) {
+        loginViewModel.resetLoginState()
+    }
+
     LaunchedEffect(loginUiState.loginSuccess) {
         if (loginUiState.loginSuccess) onLoginSuccess()
     }
@@ -46,26 +55,39 @@ fun LoginScreen(
         Column(
             modifier = modifier
                 .padding(innerPadding)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .imePadding()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             OutlinedTextField(
                 value = loginUiState.username,
                 onValueChange = { loginViewModel.onUsernameChange(it) },
-                label = { Text(text = "Username") }
+                label = { Text(text = "Username") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier.padding(4.dp))
+            Spacer(modifier.padding(12.dp))
             OutlinedTextField(
                 value = loginUiState.password,
                 onValueChange = { loginViewModel.onPasswordChange(it) },
                 label = { Text(text = "Password") },
-                visualTransformation = PasswordVisualTransformation()
+                visualTransformation = PasswordVisualTransformation(),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier.padding(8.dp))
             Button(
-                onClick = { loginViewModel.login() }
+                onClick = { loginViewModel.login() },
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Login")
+            }
+            loginUiState.error?.let {
+                Spacer(Modifier.height(8.dp))
+                Text(text = it)
             }
 
         }
