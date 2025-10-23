@@ -34,7 +34,17 @@ fun FestivalDetailScreen(
     args: FestivalDetail,
     onBack: () -> Unit
 ) {
+
+    val vmKey = buildString {
+        append("FestivalDetail:")
+        append(args.festivalName).append('|')
+        append(args.bsMonth).append('|')
+        append(args.bsDate).append('|')
+        append(args.enDate)
+    }
+
     val vm: FestivalDetailViewModel = viewModel(
+        key = vmKey,
         factory = FestivalDetailViewModel.factory(
             festivalName = args.festivalName,
             bsMonth = args.bsMonth,

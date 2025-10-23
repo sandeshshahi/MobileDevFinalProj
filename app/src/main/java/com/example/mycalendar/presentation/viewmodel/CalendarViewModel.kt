@@ -1,6 +1,7 @@
 // Kotlin
 package com.example.mycalendar.presentation.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.mycalendar.data.remote.Day
@@ -78,9 +79,11 @@ class CalendarViewModel : ViewModel() {
                         )
                     }
                 } else {
+                    Log.e("CalendarVM", "HTTP ${resp.code()} ${resp.message()} body=${resp.errorBody()?.string()}")
                     _uiState.update { it.copy(isLoading = false) }
                 }
-            } catch (_: Exception) {
+            } catch (e: Exception) {
+                Log.e("CalendarVM", "Failed to load month (is server at http://10.0.2.2:3000/ running?)", e)
                 _uiState.update { it.copy(isLoading = false) }
             }
         }

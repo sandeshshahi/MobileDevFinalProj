@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
 
 class FestivalDetailViewModel(
@@ -92,11 +93,19 @@ class FestivalDetailViewModel(
         Log.d("FestivalVM", "imagePrompt -> $imagePrompt")
 
         // 3) Run in parallel
-        val descDeferred = async(Dispatchers.IO) { festivalRepository.generateText(textPrompt) }
-        val imgDeferred = async(Dispatchers.IO) { festivalRepository.generateImage(imagePrompt) }
+//        val descDeferred = async(Dispatchers.IO) { festivalRepository.generateText(textPrompt) }
+//        val imgDeferred = async(Dispatchers.IO) { festivalRepository.generateImage(imagePrompt) }
 
-        val textResult = descDeferred.await()
-        val imgResult = imgDeferred.await()
+        // Run AI calls in parallel; do not cancel both if one fails.
+        val textResult = supervisorScope {
+            async(Dispatchers.IO) { festivalRepository.generateText(textPrompt) }.await()
+        }
+        val imgResult = supervisorScope {
+            async(Dispatchers.IO) { festivalRepository.generateImage(imagePrompt) }.await()
+        }
+
+//        val textResult = descDeferred.await()
+//        val imgResult = imgDeferred.await()
 
         val description = textResult.getOrElse {
             withContext(Dispatchers.IO) {
@@ -110,18 +119,27 @@ class FestivalDetailViewModel(
         }
         val images = imgResult.getOrElse { emptyList() }
 
-        val errorMsg = buildList {
-            translationError?.let { add("Translate: ${it.message ?: it::class.simpleName}") }
-            textResult.exceptionOrNull()?.let { add("Text: ${it.message ?: it::class.simpleName}") }
-            imgResult.exceptionOrNull()?.let { add("Image: ${it.message ?: it::class.simpleName}") }
-        }.takeIf { it.isNotEmpty() }?.joinToString("; ")
+        val textSucceeded = textResult.isSuccess
+        val imageSucceeded = imgResult.isSuccess && images.isNotEmpty()
+
+
+        val friendlyError = if (!textSucceeded && !imageSucceeded) {
+            "Content is temporarily unavailable. Please try again."
+        } else null
+
+
+//        val errorMsg = buildList {
+//            translationError?.let { add("Translate: ${it.message ?: it::class.simpleName}") }
+//            textResult.exceptionOrNull()?.let { add("Text: ${it.message ?: it::class.simpleName}") }
+//            imgResult.exceptionOrNull()?.let { add("Image: ${it.message ?: it::class.simpleName}") }
+//        }.takeIf { it.isNotEmpty() }?.joinToString("; ")
 
         _uiState.update {
             it.copy(
                 description = description,
                 image = images,
                 isLoading = false,
-                error = errorMsg
+                error = friendlyError
             )
         }
     }
