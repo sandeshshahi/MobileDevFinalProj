@@ -22,6 +22,13 @@ class NotesViewModel(
 //    private val prefs = PreferencesDataSource(application)
 //    private val repo = NotesRepositoryImpl(NotesDatabase.getDatabase(application).noteDao())
 
+    // Required by AndroidViewModelFactory: (Application) only
+    constructor(application: Application) : this(
+        application,
+        NotesRepositoryImpl(NotesDatabase.getDatabase(application).noteDao()),
+        PreferencesDataSource(application)
+    )
+
     // exposes notes for currently logged in user
     val userNotes = prefs.getUserCredentials()
         .flatMapLatest { creds ->
