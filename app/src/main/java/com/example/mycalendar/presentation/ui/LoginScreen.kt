@@ -1,5 +1,6 @@
 package com.example.mycalendar.presentation.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -53,35 +55,31 @@ fun LoginScreen(
 
     Scaffold { innerPadding ->
         Column(
-            modifier = modifier
-                .padding(innerPadding)
-                .fillMaxSize()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(innerPadding)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             OutlinedTextField(
                 value = loginUiState.username,
                 onValueChange = { loginViewModel.onUsernameChange(it) },
                 label = { Text(text = "Username") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+//                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier.padding(12.dp))
+            Spacer(Modifier.padding(12.dp))
             OutlinedTextField(
                 value = loginUiState.password,
                 onValueChange = { loginViewModel.onPasswordChange(it) },
                 label = { Text(text = "Password") },
                 visualTransformation = PasswordVisualTransformation(),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+//                modifier = Modifier.fillMaxWidth()
             )
-            Spacer(modifier.padding(8.dp))
+            Spacer(Modifier.padding(8.dp))
             Button(
                 onClick = { loginViewModel.login() },
-                modifier = Modifier.fillMaxWidth()
+//                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Login")
             }
@@ -94,4 +92,13 @@ fun LoginScreen(
 
     }
 
+}
+
+@Preview(
+    showBackground = true,
+    showSystemUi = true
+)
+@Composable
+fun LoginScreenPreview() {
+    LoginScreen()
 }
