@@ -1,0 +1,29 @@
+{
+  "name": "nepali-calendar-api",
+  "version": "1.0.0",
+  "description": "REST API to scrape Nepali calendar data and serve JSON",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "nepali",
+    "calendar",
+    "scraper",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC",
+  "overrides": {
+    "parse5": "^6.0.1"
+  },
+  "dependencies": {
+    "axios": "^1.12.2",
+    "express": "^5.1.0",
+    "jsdom": "^27.0.1",
+    "parse5": "^6.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
