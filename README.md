@@ -88,6 +88,7 @@ graph TD
 | **Local Persistence** | **Room** (for user notes), **DataStore** (for user login credentials)                |
 | **Remote Data**       | **Retrofit** (for calendar data), **OkHttp** (logging)                               |
 | **Generative AI**     | **Firebase AI** (Gemini for text, Imagen for images)                                 |
+| **Backend**           | **Node.js**, **Express**, **Axios**, **JSDOM** (for web scrapping)                   |
 | **Background Tasks**  | **WorkManager** (for periodic data sync/notifications)                               |
 | **Testing**           | **JUnit 4**, **Robolectric**, **kotlinx-coroutines-test** (for ViewModel unit tests) |
 | **Serialization**     | **Gson**, **kotlinx.serialization**                                                  |
@@ -142,8 +143,12 @@ com.example.mycalendar
     - Go to the [Firebase Console](https://console.firebase.google.com/) and create a new Android project.
     - Download the `google-services.json` file from your Firebase project settings.
     - Place the `google-services.json` file in the `app/` directory of this project.
-3.  **Run the Local Server:**
-    - The calendar data is fetched from a local Ktor server. You need to run this server on your machine for the app to function. Ensure it is running at `http://10.0.2.2:3000`.
+3.  **Run the Backend Server:**
+    - The calendar data is fetched from a Node.js server that scrapes the data from a website.
+    - Navigate to the `nepali-calendar-api (backend)` directory in the project.
+    - Install the dependencies: `npm install`
+    - Start the server: `npm start`
+    - The server will be running at `http://localhost:3000`.
 4.  **Open in Android Studio:**
     - Open the cloned repository in a recent version of Android Studio.
     - Let Gradle sync the project dependencies.
@@ -152,15 +157,15 @@ com.example.mycalendar
 
 ## 10. API Reference
 
-- **Calendar Data API (Local Ktor Server):**
+- **Calendar Data API (Node.js Server):**
 
   - **Base URL:** `http://10.0.2.2:3000/` (Note: `10.0.2.2` is the standard alias for the host machine's localhost from the Android emulator).
-  - **Endpoint:** `GET /month`
+  - **Endpoint:** `GET /api/scrape`
   - **Query Params:** `year: Int`, `month: Int`
-  - **Description:** Fetches all the days and metadata for a specific Bikram Sambat month and year.
+  - **Description:** Scrapes and returns the calendar data for a specific Bikram Sambat month and year.
 
 - **Generative AI API (Firebase AI):**
-  - **Text Model:** `gemini-1.5-flash-preview-0514` (via `GenerativeModel`)
+  - **Text Model:** `gemini-2.5-flash-preview-0514` (via `GenerativeModel`)
   - **Image Model:** `imagen-3` (via `ImagenModel`)
   - **Description:** These services are used to generate contextual descriptions and images for festivals.
 
